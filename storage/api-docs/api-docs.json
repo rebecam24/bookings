@@ -1,0 +1,1551 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Documentación de la API de Reserva de Espacios",
+        "description": "API para la gestión de reservas de espacios como salas de reuniones, auditorios, y más.",
+        "contact": {
+            "email": "rmartinez4298@gmail.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api"
+        }
+    ],
+    "paths": {
+        "/register": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "User register",
+                "description": "Creates a new user and returns a JWT token",
+                "operationId": "e66f8a7452e13b03ae4e77dbb42e435c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "johndoe@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully."
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login user and get token",
+                "operationId": "d618a255475240ba3d40cc39692cd924",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "rmartinez4298@gmail.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "123456789"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Inicio de sesión exitoso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "access_token": {
+                                            "type": "string",
+                                            "example": "eyJ0eXAiOiJKV1QiLCJh..."
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "bearer"
+                                        },
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 3600
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "John Doe"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "role": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "example": "admin"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid credentials"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Close session",
+                "description": "Close the current user session",
+                "operationId": "1e357eb2c93a1bdabebcebfa088332bf",
+                "responses": {
+                    "200": {
+                        "description": "Session closed successfully."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bookings": {
+            "get": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get all bookings",
+                "operationId": "2a8518bafccd7b95f3cb325c26f32963",
+                "responses": {
+                    "200": {
+                        "description": "Bookings retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "bookings": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "description": "The unique identifier for the booking.",
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "user_id": {
+                                                                "description": "The ID of the user who made the booking.",
+                                                                "type": "integer",
+                                                                "example": 3
+                                                            },
+                                                            "place_id": {
+                                                                "description": "The ID of the booked place.",
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "event_name": {
+                                                                "description": "The name of the event for the booking.",
+                                                                "type": "string",
+                                                                "example": "XIV Culture Show"
+                                                            },
+                                                            "start_date": {
+                                                                "description": "The start date and time of the booking.",
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "example": "2024-10-15 00:00:00"
+                                                            },
+                                                            "end_date": {
+                                                                "description": "The end date and time of the booking.",
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "example": "2024-10-15 00:00:00"
+                                                            },
+                                                            "start_time": {
+                                                                "description": "The start time of the booking.",
+                                                                "type": "string",
+                                                                "format": "time",
+                                                                "example": "14:00:00"
+                                                            },
+                                                            "end_time": {
+                                                                "description": "The end time of the booking.",
+                                                                "type": "string",
+                                                                "format": "time",
+                                                                "example": "15:00:00"
+                                                            },
+                                                            "status": {
+                                                                "description": "The status of the booking.",
+                                                                "type": "string",
+                                                                "example": "booked"
+                                                            },
+                                                            "created_at": {
+                                                                "description": "The date and time the booking was created.",
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "example": "2024-10-14T01:26:15.000000Z"
+                                                            },
+                                                            "updated_at": {
+                                                                "description": "The date and time the booking was last updated.",
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "example": "2024-10-14T01:26:15.000000Z"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Create a booking",
+                "operationId": "8ea37a8102d7321f641e03dab665b59c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "place_id",
+                                    "start_date",
+                                    "end_date",
+                                    "start_time",
+                                    "end_time",
+                                    "event_name"
+                                ],
+                                "properties": {
+                                    "place_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-10-15"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-10-16"
+                                    },
+                                    "start_time": {
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "14:00"
+                                    },
+                                    "end_time": {
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "12:00"
+                                    },
+                                    "event_name": {
+                                        "type": "string",
+                                        "example": "XIV Culture Show"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Booking created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "description": "Indicates whether the booking was created successfully.",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "description": "A message indicating the result of the operation.",
+                                            "type": "string",
+                                            "example": "Booking created successfully."
+                                        },
+                                        "booking": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "The unique identifier for the booking.",
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "place_id": {
+                                                    "description": "The ID of the booked place.",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "user_id": {
+                                                    "description": "The ID of the user who made the booking.",
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "start_date": {
+                                                    "description": "The start date of the booking.",
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2024-10-15"
+                                                },
+                                                "end_date": {
+                                                    "description": "The end date of the booking.",
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2024-10-15"
+                                                },
+                                                "start_time": {
+                                                    "description": "The start time of the booking.",
+                                                    "type": "string",
+                                                    "format": "time",
+                                                    "example": "10:00"
+                                                },
+                                                "end_time": {
+                                                    "description": "The end time of the booking.",
+                                                    "type": "string",
+                                                    "format": "time",
+                                                    "example": "12:00"
+                                                },
+                                                "event_name": {
+                                                    "description": "The name of the event for the booking.",
+                                                    "type": "string",
+                                                    "example": "Conference"
+                                                },
+                                                "status": {
+                                                    "description": "The status of the booking.",
+                                                    "type": "string",
+                                                    "example": "booked"
+                                                },
+                                                "created_at": {
+                                                    "description": "The date and time the booking was created.",
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-10-14T01:35:05.000000Z"
+                                                },
+                                                "updated_at": {
+                                                    "description": "The date and time the booking was last updated.",
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-10-14T01:35:05.000000Z"
+                                                },
+                                                "place": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "description": "The ID of the place.",
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "name": {
+                                                            "description": "The name of the place.",
+                                                            "type": "string",
+                                                            "example": "Main Auditorium"
+                                                        },
+                                                        "description": {
+                                                            "description": "The description of the place.",
+                                                            "type": "string",
+                                                            "example": "A large auditorium suitable for conferences and big events."
+                                                        },
+                                                        "capacity": {
+                                                            "description": "The maximum capacity of the place.",
+                                                            "type": "integer",
+                                                            "example": 300
+                                                        },
+                                                        "type": {
+                                                            "description": "The type of place (e.g., auditorium, conference room).",
+                                                            "type": "string",
+                                                            "example": "auditorio"
+                                                        },
+                                                        "default_hours": {
+                                                            "description": "The default operational hours of the place.",
+                                                            "type": "string",
+                                                            "example": "08:00-18:00"
+                                                        },
+                                                        "default_days": {
+                                                            "description": "The default operational days of the place.",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "example": [
+                                                                "Monday",
+                                                                "Tuesday",
+                                                                "Wednesday",
+                                                                "Thursday",
+                                                                "Friday"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bookings/{id}": {
+            "get": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get booking details",
+                "operationId": "b6fae45d427b346debfca2646f1a624a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID booking",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Booking details retrieved successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "booking": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "user_id": {
+                                                            "type": "integer",
+                                                            "example": 3
+                                                        },
+                                                        "place_id": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "event_name": {
+                                                            "type": "string",
+                                                            "example": "XIV Culture Show"
+                                                        },
+                                                        "start_date": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2024-10-15 00:00:00"
+                                                        },
+                                                        "end_date": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2024-10-15 00:00:00"
+                                                        },
+                                                        "start_time": {
+                                                            "type": "string",
+                                                            "format": "time",
+                                                            "example": "14:00:00"
+                                                        },
+                                                        "end_time": {
+                                                            "type": "string",
+                                                            "format": "time",
+                                                            "example": "15:00:00"
+                                                        },
+                                                        "status": {
+                                                            "type": "string",
+                                                            "example": "booked"
+                                                        },
+                                                        "created_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2024-10-14T01:26:15.000000Z"
+                                                        },
+                                                        "updated_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2024-10-14T01:26:15.000000Z"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Booking details."
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "integer",
+                                            "example": 200
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Update booking details",
+                "operationId": "a4ce6fffaa4d8a5801aee4b3626c8fff",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "place_id": {
+                                        "type": "integer"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "start_time": {
+                                        "type": "string",
+                                        "format": "time"
+                                    },
+                                    "end_time": {
+                                        "type": "string",
+                                        "format": "time"
+                                    },
+                                    "event_name": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Booking updated successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "booking": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "user_id": {
+                                                            "type": "integer",
+                                                            "example": 3
+                                                        },
+                                                        "place_id": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "event_name": {
+                                                            "type": "string",
+                                                            "example": "XIV Culture Show"
+                                                        },
+                                                        "start_date": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2024-10-15 00:00:00"
+                                                        },
+                                                        "end_date": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2024-10-15 00:00:00"
+                                                        },
+                                                        "start_time": {
+                                                            "type": "string",
+                                                            "format": "time",
+                                                            "example": "14:00:00"
+                                                        },
+                                                        "end_time": {
+                                                            "type": "string",
+                                                            "format": "time",
+                                                            "example": "15:00:00"
+                                                        },
+                                                        "status": {
+                                                            "type": "string",
+                                                            "example": "booked"
+                                                        },
+                                                        "created_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2024-10-14T01:26:15.000000Z"
+                                                        },
+                                                        "updated_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2024-10-14T01:26:15.000000Z"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Booking details."
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "integer",
+                                            "example": 200
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Delete a booking",
+                "operationId": "73337fa09690980119a23d574e14510b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Booking deleted successfully"
+                    },
+                    "404": {
+                        "description": "Booking not found"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bookings/{id}/cancel": {
+            "post": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Cancell a booking",
+                "operationId": "ee9d41a0a6c8ff625c3e3ae1259d3103",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Booking cancelled successfully"
+                    },
+                    "404": {
+                        "description": "Booking not found"
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/places": {
+            "get": {
+                "tags": [
+                    "Places"
+                ],
+                "summary": "Get all places",
+                "description": "Retrieve a list of all available places.",
+                "operationId": "getAllPlaces",
+                "responses": {
+                    "200": {
+                        "description": "Places obtained successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "places": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Place"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Places"
+                ],
+                "summary": "Create a new place",
+                "description": "Create a new place. Only accessible by admins.",
+                "operationId": "createPlace",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Main Auditorium"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "A large conference hall."
+                                    },
+                                    "images": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "capacity": {
+                                        "type": "integer",
+                                        "example": 300
+                                    },
+                                    "available_from": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-01-01"
+                                    },
+                                    "available_to": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-12-31"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "auditorio"
+                                    },
+                                    "default_days": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "default_hours": {
+                                        "type": "string",
+                                        "example": "09:00-17:00"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Place created successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "space": {
+                                            "$ref": "#/components/schemas/Place"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized. Only admins can create places.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/places/{id}": {
+            "get": {
+                "tags": [
+                    "Places"
+                ],
+                "summary": "Get a specific place by ID",
+                "description": "Retrieve detailed information of a specific place using its ID.",
+                "operationId": "getPlaceById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the place to retrieve",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Place retrieved successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "place": {
+                                            "$ref": "#/components/schemas/Place"
+                                        },
+                                        "availability": {
+                                            "properties": {
+                                                "days": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "hours": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Place not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Places"
+                ],
+                "summary": "Update a specific place by ID",
+                "description": "Update the details of a specific place. Only admins can perform this action.",
+                "operationId": "updatePlace",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the place to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Updated Auditorium"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "An updated description."
+                                    },
+                                    "images": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "capacity": {
+                                        "type": "integer",
+                                        "example": 500
+                                    },
+                                    "available_from": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-02-01"
+                                    },
+                                    "available_to": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-11-30"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "sala de conferencia"
+                                    },
+                                    "default_days": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "default_hours": {
+                                        "type": "string",
+                                        "example": "08:00-18:00"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Place updated successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "space": {
+                                            "$ref": "#/components/schemas/Place"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized. Only admins can update places.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Places"
+                ],
+                "summary": "Delete a specific place by ID",
+                "description": "Delete a place from the system. Only admins can perform this action.",
+                "operationId": "deletePlace",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the place to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Place deleted successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized. Only admins can delete places.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/filter-places": {
+            "get": {
+                "tags": [
+                    "Places"
+                ],
+                "summary": "Filter places based on criteria",
+                "description": "Filter places based on type, capacity, and availability dates and times.",
+                "operationId": "filterPlaces",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Space type (Ej: oficina, sala de reuniones, etc.)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "office"
+                        }
+                    },
+                    {
+                        "name": "capacity",
+                        "in": "query",
+                        "description": "Minimum capacity of the space",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Start date for availability check",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-10-15"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "End date for availability check",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-10-16"
+                        }
+                    },
+                    {
+                        "name": "start_time",
+                        "in": "query",
+                        "description": "Start time for availability check (HH:mm)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "time",
+                            "example": "09:00"
+                        }
+                    },
+                    {
+                        "name": "end_time",
+                        "in": "query",
+                        "description": "End time for availability check (HH:mm)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "time",
+                            "example": "17:00"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Places filtered successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "places": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Place"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized."
+                    },
+                    "500": {
+                        "description": "Server error.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Server error message"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Booking": {
+                "required": [
+                    "id",
+                    "user_id",
+                    "place_id",
+                    "start_date",
+                    "end_date",
+                    "start_time",
+                    "end_time"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "example": 1
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "place_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "start_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-10-15"
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-10-16"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "format": "time",
+                        "example": "14:00:00"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "format": "time",
+                        "example": "12:00:00"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "pending"
+                    },
+                    "event_name": {
+                        "type": "string",
+                        "example": "XIV Culture Show"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "type": "object"
+            },
+            "Place": {
+                "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "capacity",
+                    "default_days",
+                    "default_hours"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Sala de Reuniones A"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Una sala espaciosa para reuniones."
+                    },
+                    "capacity": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "default_days": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "Monday"
+                        }
+                    },
+                    "default_hours": {
+                        "type": "string",
+                        "example": "09:00-17:00"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Authentication",
+            "description": "Authentication"
+        },
+        {
+            "name": "Bookings",
+            "description": "Bookings"
+        },
+        {
+            "name": "Places",
+            "description": "Places"
+        }
+    ]
+}
