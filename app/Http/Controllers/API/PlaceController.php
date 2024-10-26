@@ -6,7 +6,7 @@ use App\Models\Place;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-
+use Illuminate\Support\Facades\Log;
     /**
      * @OA\Schema(
      *     schema="Place",
@@ -28,6 +28,7 @@ class PlaceController extends BaseController
      * @OA\Get(
      *     path="/places",
      *     tags={"Places"},
+     *     security={{"bearerAuth": {}}},
      *     summary="Get all places",
      *     description="Retrieve a list of all available places.",
      *     operationId="getAllPlaces",
@@ -82,22 +83,42 @@ class PlaceController extends BaseController
      * @OA\Post(
      *     path="/places",
      *     tags={"Places"},
+     *     security={{"bearerAuth": {}}}, 
      *     summary="Create a new place",
      *     description="Create a new place. Only accessible by admins.",
      *     operationId="createPlace",
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", example="Main Auditorium"),
-     *             @OA\Property(property="description", type="string", example="A large conference hall."),
-     *             @OA\Property(property="images", type="array", @OA\Items(type="string")),
-     *             @OA\Property(property="capacity", type="integer", example=300),
-     *             @OA\Property(property="available_from", type="string", format="date", example="2024-01-01"),
-     *             @OA\Property(property="available_to", type="string", format="date", example="2024-12-31"),
-     *             @OA\Property(property="type", type="string", example="auditorio"),
-     *             @OA\Property(property="default_days", type="array", @OA\Items(type="string")),
-     *             @OA\Property(property="default_hours", type="string", example="09:00-17:00")
-     *         )
+     *         content={
+     *             @OA\MediaType(
+     *                 mediaType="multipart/form-data",
+     *                 @OA\Schema(
+     *                     type="object",
+     *                     required={"name", "description", "capacity", "available_from", "available_to", "type", "default_hours"},
+     *                     @OA\Property(property="name", type="string", example="Main Auditorium"),
+     *                     @OA\Property(property="description", type="string", example="A large conference hall."),
+     *                     @OA\Property(
+     *                        property="images[]",
+     *                        type="array",
+     *                        @OA\Items(
+     *                            type="string",
+     *                            format="binary",
+     *                        ),
+     *                     ),
+     *                     @OA\Property(property="capacity", type="integer", example=300),
+     *                     @OA\Property(property="available_from", type="string", format="date", example="2024-01-01"),
+     *                     @OA\Property(property="available_to", type="string", format="date", example="2024-12-31"),
+     *                     @OA\Property(property="type", type="string", example="auditorio"),
+     *                     @OA\Property(
+     *                        property="default_days[]",
+     *                        type="array",
+     *                        @OA\Items(type="string", example="Lun"),
+     *                       description="Array of default days"
+     *                     ),
+     *                     @OA\Property(property="default_hours", type="string", example="09:00-17:00")
+     *                 )
+     *             )
+     *         }
      *     ),
      *     @OA\Response(
      *         response=201,
@@ -126,14 +147,22 @@ class PlaceController extends BaseController
      *     )
      * )
      */
+
     public function store(Request $request)
     {
         $user = Auth::user();
         if (!$user || !$user->hasRole('admin')) {
             return response()->json(['message' => 'Unauthorized. Only admins can create places.'], 403);
         }
-
+        
         try {
+            if (is_string($request->default_days[0]) && count($request->default_days) === 1) {
+                $daysArray = explode(',', $request->default_days[0]);
+                $request->merge([
+                    'default_days' => $daysArray,
+                ]);
+            }
+            
             $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'required|string',
@@ -144,8 +173,9 @@ class PlaceController extends BaseController
                 'available_to' => 'nullable|date|after_or_equal:available_from',
                 'type' => 'nullable|in:salon,auditorio,sala de reunion,sala de conferencia',
                 'default_days' => 'nullable|array',
-                'default_days.*' => 'in:Lun,Mar,Mie,Jue,Vie',
+                'default_days.*' => 'in:Lun,Mar,Mie,Jue,Vie,Sab,Dom',
                 'default_hours' => 'nullable|string|regex:/^\d{2}:\d{2}-\d{2}:\d{2}$/',
+                'active' => 'required|boolean',
             ]);
 
             
@@ -161,16 +191,19 @@ class PlaceController extends BaseController
             $space = Place::create([
                 'name' => $request->name,
                 'description' => $request->description,
-                'images' => json_encode($imagePaths), 
+                'images' => array_map(function($path) {
+                    return asset('storage/' . $path); 
+                }, $imagePaths) ?? null, 
                 'capacity' => $request->capacity,
                 'available_from' => $request->available_from,
                 'available_to' => $request->available_to,
                 'type' => $request->type ?? 'salon',
-                'default_days' => json_encode($request->default_days ?? ['Lun', 'Mar', 'Mie', 'Jue', 'Vie']),
+                'default_days' => $request->default_days ?? ['Lun', 'Mar', 'Mie', 'Jue', 'Vie'],
                 'default_hours' => $request->default_hours ?? '09:00-17:00',
+                'active' => $request->active ?? 1,
             ]);
 
-            return $this->sendResponse(['space' => $space, 'message' => 'Place created successfully.'], 201);
+            return $this->sendResponse(['places' => $space, 'message' => 'Place created successfully.'], 201);
         } catch (\Exception $e) {
             return $this->sendError(['message' => $e->getMessage()], 500);
         }
@@ -180,6 +213,7 @@ class PlaceController extends BaseController
      * @OA\Get(
      *     path="/places/{id}",
      *     tags={"Places"},
+     *     security={{"bearerAuth": {}}},
      *     summary="Get a specific place by ID",
      *     description="Retrieve detailed information of a specific place using its ID.",
      *     operationId="getPlaceById",
@@ -236,9 +270,10 @@ class PlaceController extends BaseController
                 return $this->sendError(['message' => 'Unauthorized.'], 403);
             }else{
                 $place = Place::findOrFail($id);
+
                
                 return $this->sendResponse([
-                    'place' => $place,
+                    'places' => $place,
                     'availability' => [
                         'days' => $place->default_days,
                         'hours' => $place->default_hours,
@@ -258,6 +293,7 @@ class PlaceController extends BaseController
      * @OA\Put(
      *     path="/places/{id}",
      *     tags={"Places"},
+     *     security={{"bearerAuth": {}}},
      *     summary="Update a specific place by ID",
      *     description="Update the details of a specific place. Only admins can perform this action.",
      *     operationId="updatePlace",
@@ -270,16 +306,21 @@ class PlaceController extends BaseController
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", example="Updated Auditorium"),
-     *             @OA\Property(property="description", type="string", example="An updated description."),
-     *             @OA\Property(property="images", type="array", @OA\Items(type="string")),
-     *             @OA\Property(property="capacity", type="integer", example=500),
-     *             @OA\Property(property="available_from", type="string", format="date", example="2024-02-01"),
-     *             @OA\Property(property="available_to", type="string", format="date", example="2024-11-30"),
-     *             @OA\Property(property="type", type="string", example="sala de conferencia"),
-     *             @OA\Property(property="default_days", type="array", @OA\Items(type="string")),
-     *             @OA\Property(property="default_hours", type="string", example="08:00-18:00")
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 type="object",
+     *                 required={"name", "description"},
+     *                 @OA\Property(property="name", type="string", example="Updated Auditorium"),
+     *                 @OA\Property(property="description", type="string", example="An updated description."),
+     *                 @OA\Property(property="images", type="array", @OA\Items(type="string", format="binary")),
+     *                 @OA\Property(property="capacity", type="integer", example=500),
+     *                 @OA\Property(property="available_from", type="string", format="date", example="2024-02-01"),
+     *                 @OA\Property(property="available_to", type="string", format="date", example="2024-11-30"),
+     *                 @OA\Property(property="type", type="string", example="sala de conferencia"),
+     *                 @OA\Property(property="default_days", type="array", @OA\Items(type="string")),
+     *                 @OA\Property(property="default_hours", type="string", example="08:00-18:00")
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -305,34 +346,38 @@ class PlaceController extends BaseController
      *         @OA\JsonContent(
      *             type="object",
      *             @OA\Property(property="message", type="string")
-     *         )
-     *     )
-     * )
-     */
+    *         )
+    *     )
+    * )
+    */
     public function update(Request $request, $id)
     {
+        Log::info('Request Data:', $request->all());
         $user = Auth::user();
         $place = Place::findOrFail($id);
+        // Verificación de permisos
         if (!$user || !$user->hasRole('admin')) {
             return $this->sendError(['message' => 'Unauthorized. Solo los administradores pueden actualizar lugares.'], 403);
         }
 
         try {
+            // Validar entrada
             $request->validate([
-                'name' => 'sometimes|required|string|max:255',
-                'description' => 'sometimes|required|string',
+                'name' => 'nullable|string|max:255',
+                'description' => 'nullable|string',
                 'images' => 'nullable|array',
-                'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Validación para archivos de imagen
-                'capacity' => 'sometimes|required|integer|min:1',
+                'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+                'capacity' => 'nullable|integer|min:1',
                 'available_from' => 'nullable|date',
                 'available_to' => 'nullable|date|after_or_equal:available_from',
                 'type' => 'nullable|in:salon,auditorio,sala de reunión,sala de conferencia',
                 'default_days' => 'nullable|array',
-                'default_days.*' => 'in:Monday,Tuesday,Wednesday,Thursday,Friday',
+                'default_days.*' => 'in:Lun,Mar,Mie,Jue,Vie,Sab,Dom',
                 'default_hours' => 'nullable|string|regex:/^\d{2}:\d{2}-\d{2}:\d{2}$/',
             ]);
 
-            $existingImages = json_decode($place->images, true) ?? [];
+            // Manejar imágenes nuevas
+            $existingImages = $place->images ?? [];
             $newImagePaths = [];
 
             if ($request->hasFile('images')) {
@@ -342,22 +387,27 @@ class PlaceController extends BaseController
                     $newImagePaths[] = $imagePath;
                 }
             }
-            
+
             $allImages = array_merge($existingImages, $newImagePaths);
+            Log::info('Place Data Before Update:', $place->toArray());
 
             $place->update([
                 'name' => $request->input('name', $place->name),
                 'description' => $request->input('description', $place->description),
-                'images' => json_encode($allImages), 
+                'images' => $allImages ?? null,
                 'capacity' => $request->input('capacity', $place->capacity),
                 'available_from' => $request->input('available_from', $place->available_from),
                 'available_to' => $request->input('available_to', $place->available_to),
                 'type' => $request->input('type', $place->type),
-                'default_days' => json_encode($request->input('default_days', json_decode($place->default_days))),
+                'default_days' => $request->input('default_days', $place->default_days),
                 'default_hours' => $request->input('default_hours', $place->default_hours),
+                'active' => $request->input('active', $place->active),
             ]);
+            
+            Log::info('Place Data After Update:', $place->toArray());
+            
 
-            return $this->sendResponse(['space' => $place, 'message' => 'Place updated successfully.'], 200);
+            return $this->sendResponse(['place' => $place, 'message' => 'Place updated successfully.'], 200);
         } catch (\Throwable $th) {
             return response()->json(['error' => $th->getMessage()], 500);
         }
@@ -367,6 +417,7 @@ class PlaceController extends BaseController
      * @OA\Delete(
      *     path="/places/{id}",
      *     tags={"Places"},
+     *     security={{"bearerAuth": {}}},
      *     summary="Delete a specific place by ID",
      *     description="Delete a place from the system. Only admins can perform this action.",
      *     operationId="deletePlace",

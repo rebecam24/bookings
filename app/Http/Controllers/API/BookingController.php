@@ -4,8 +4,9 @@ namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use Carbon\Carbon;
 use App\Models\Booking;
+use App\Models\Place;
 
 /**
  * @OA\Schema(
@@ -67,7 +68,8 @@ class BookingController extends BaseController
     {   $user = Auth::user();
         try {
             
-            $bookings = $user->bookings;
+            // $bookings = $user->bookings;
+            $bookings = $user->bookings()->with('place')->with('user')->where('status', 'booked')->get();
             
             return $this->sendResponse(['bookings' => $bookings], 200);
 
@@ -149,6 +151,26 @@ class BookingController extends BaseController
         ]);
 
         try {
+            $place = Place::findOrFail($validated['place_id']);
+
+            // Check if the reservation is within the operational hours
+            $defaultHours = $place->default_hours;
+
+            list($startAllowed, $endAllowed) = explode('-', $defaultHours);
+
+            $startAllowed = Carbon::createFromTimeString($startAllowed);
+            $endAllowed = Carbon::createFromTimeString($endAllowed);
+
+            $reservationStartTime = Carbon::createFromTimeString($validated['start_time']);
+            $reservationEndTime = Carbon::createFromTimeString($validated['end_time']);
+
+            if ($reservationStartTime->lt($startAllowed) || $reservationEndTime->gt($endAllowed)) {
+                return response()->json([
+                    'message' => 'La reserva debe estar dentro del horario permitido de ' . $defaultHours,
+                ], 422);
+            }
+
+            // Check for overlapping bookings
             $overlapping = Booking::where('place_id', $validated['place_id'])
                 ->where('status', '!=', 'cancelled')
                 ->where(function ($query) use ($validated) {
@@ -181,7 +203,6 @@ class BookingController extends BaseController
            
             $booking->load('place');
             return $this->sendResponse(['booking' => $booking, 'message' => 'Booking created successfully.'], 201);
-            //return $this->sendResponse(['booking' => $booking->with('place'), 'message' => 'Booking created successfully.'], 201);
         
         } catch (\Throwable $th) {
             return $this->sendError(['message' => $th->getMessage()], 500);
@@ -404,7 +425,7 @@ class BookingController extends BaseController
     }
 
     /**
-     * @OA\Post(
+     * @OA\Put(
      *     path="/bookings/{id}/cancel",
      *     summary="Cancell a booking",
      *     tags={"Bookings"},
@@ -442,6 +463,72 @@ class BookingController extends BaseController
             return $this->sendResponse(['message' => 'Booking cancelled successfully.'], 200);
         } catch (\Throwable $th) {
             return $this->sendError(['message' => $th->getMessage()], 500);
+        }
+    }
+
+
+    /**
+     * @OA\Get(
+     *     path="/places/{place_id}/booked-schedule",
+     *     tags={"Places"},
+     *     security={{"bearerAuth":{}}},
+     *     summary="Get booked schedule for a specific place",
+     *     description="Returns the schedule that is booked for a place based on current reservations with status 'booked'.",
+     *     operationId="getBookedSchedule",
+     *     @OA\Parameter(
+     *         name="place_id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the place to get the booked schedule",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Booked schedule retrieved successfully.",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 @OA\Property(property="start_date", type="string", example="2024-10-25"),
+     *                 @OA\Property(property="end_date", type="string", example="2024-10-25"),
+     *                 @OA\Property(property="start_time", type="string", example="14:00"),
+     *                 @OA\Property(property="end_time", type="string", example="15:00")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="No booked schedule found or place not found."
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error."
+     *     )
+     * )
+     */
+    public function getBookedSchedule($place_id)
+    {
+        try {
+            $bookedReservations = Booking::where('place_id', $place_id)
+                ->where('status', 'booked')
+                ->select('start_date', 'end_date', 'start_time', 'end_time')
+                ->get();
+
+            if ($bookedReservations->isEmpty()) {
+                return response()->json(['message' => 'No booked schedule found for this place.', 'booked_schedule' => []], 404);
+            }
+
+            $bookedSchedule = $bookedReservations->map(function ($reservation) {
+                return [
+                    'start_date' => Carbon::parse($reservation->start_time)->format('Y-m-d'),
+                    'end_date' => Carbon::parse($reservation->end_time)->format('Y-m-d'),
+                    'start_time' => Carbon::parse($reservation->start_time)->format('H:i'),
+                    'end_time' => Carbon::parse($reservation->end_time)->format('H:i'),
+                ];
+            });
+
+            return response()->json(['booked_schedule' => $bookedSchedule], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 

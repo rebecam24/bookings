@@ -52,8 +52,11 @@ class AuthController extends BaseController
         $user->assignRole('user');
 
         return $this->sendResponse([
+            'token_type' => 'bearer',
+            'access_token' => $token,
+            'expires_in' => JWTAuth::factory()->getTTL() * 60,
             'user' => $user,
-            'token' => $token,
+            'role'=> $user->getRoleNames(),
             'message' => 'User registered successfully.',
         ], 201);
     }
@@ -67,8 +70,8 @@ class AuthController extends BaseController
      *         required=true,
      *         @OA\JsonContent(
      *             required={"email", "password"},
-     *             @OA\Property(property="email", type="string", format="email", example="rmartinez4298@gmail.com"),
-     *             @OA\Property(property="password", type="string", example="123456789")
+     *             @OA\Property(property="email", type="string", format="email", example="admin@example.com"),
+     *             @OA\Property(property="password", type="string", example="password")
      *         )
      *     ),
      *     @OA\Response(
@@ -89,10 +92,10 @@ class AuthController extends BaseController
      *     ),
      *     @OA\Response(
      *         response=401,
-     *         description="Invalid credentials",
+     *         description="Credenciales inválidas",
      *         @OA\JsonContent(
      *             type="object",
-     *             @OA\Property(property="error", type="string", example="Invalid credentials")
+     *             @OA\Property(property="error", type="string", example="Credenciales inválidas")
      *         )
      *     )
      * )
@@ -102,7 +105,7 @@ class AuthController extends BaseController
         $credentials = $request->only('email', 'password');
 
         if (!$token = JWTAuth::attempt($credentials)) {
-            return $this->sendError(['error' => 'Invalid credentials'], 401);
+            return $this->sendError("Error",['error' => 'Credenciales inválidas'], 401);
         }
 
         return $this->sendResponse([
@@ -111,7 +114,7 @@ class AuthController extends BaseController
             'expires_in' => JWTAuth::factory()->getTTL() * 60,
             'user' => JWTAuth::user()->only('name'),
             'role'=> JWTAuth::user()->getRoleNames(),
-            'message' => 'Login successful.',
+            'message' => 'Inicio de sesión exitoso.',
         ], 200);
     }
 
@@ -122,13 +125,13 @@ class AuthController extends BaseController
      *     summary="Close session",
      *     description="Close the current user session",
      *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="Session closed successfully."),
+     *     @OA\Response(response=200, description="Sesión cerrada exitosamente."),
      * )
      */
     public function logout(Request $request)
     {
-        JWTAuth::invalidate(JWTAuth::getToken());
+        JWTAuth::inválidate(JWTAuth::getToken());
 
-        return $this->sendResponse(['message' => 'Session closed successfully."),'], 200);
+        return $this->sendResponse(['message' => 'Sesión cerrada exitosamente."),'], 200);
     }
 }

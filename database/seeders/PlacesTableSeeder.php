@@ -53,6 +53,20 @@ class PlacesTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'name' => 'Meeting Room C',
+                'description' => 'A small meeting room for private discussions and small groups.',
+                'images' => json_encode(['meeting2.jpg']),
+                'capacity' => 40,
+                'available_from' => Carbon::now()->toDateString(),
+                'available_to' => Carbon::now()->addMonths(2)->toDateString(),
+                'type' => 'sala de reunion',
+                'active' => true,
+                'default_hours' => '10:00-16:00',
+                'default_days' => json_encode(['Mar', 'Jue']),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
 }

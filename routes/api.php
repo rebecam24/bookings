@@ -20,7 +20,6 @@ use App\Http\Controllers\API\BookingController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
-
 Route::middleware('auth:api')->group(function() {
     Route::post('logout', [AuthController::class, 'logout']);
 });
@@ -36,5 +35,6 @@ Route::middleware(['auth:api', 'role:user|admin'])->group(function () {
     Route::get('places/{id}', [PlaceController::class, 'show']);
     Route::apiResource('bookings', BookingController::class);
     Route::get('/filter-places', [PlaceController::class, 'filter']);
-    Route::post('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
+    Route::put('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
+    Route::get('/places/{place_id}/booked-schedule', [BookingController::class, 'getBookedSchedule']);
 });

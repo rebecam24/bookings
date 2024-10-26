@@ -87,11 +87,11 @@
                                     "email": {
                                         "type": "string",
                                         "format": "email",
-                                        "example": "rmartinez4298@gmail.com"
+                                        "example": "admin@example.com"
                                     },
                                     "password": {
                                         "type": "string",
-                                        "example": "123456789"
+                                        "example": "password"
                                     }
                                 },
                                 "type": "object"
@@ -141,14 +141,14 @@
                         }
                     },
                     "401": {
-                        "description": "Invalid credentials",
+                        "description": "Credenciales inválidas",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "error": {
                                             "type": "string",
-                                            "example": "Invalid credentials"
+                                            "example": "Credenciales inválidas"
                                         }
                                     },
                                     "type": "object"
@@ -169,7 +169,7 @@
                 "operationId": "1e357eb2c93a1bdabebcebfa088332bf",
                 "responses": {
                     "200": {
-                        "description": "Session closed successfully."
+                        "description": "Sesión cerrada exitosamente."
                     }
                 },
                 "security": [
@@ -790,12 +790,12 @@
             }
         },
         "/bookings/{id}/cancel": {
-            "post": {
+            "put": {
                 "tags": [
                     "Bookings"
                 ],
                 "summary": "Cancell a booking",
-                "operationId": "ee9d41a0a6c8ff625c3e3ae1259d3103",
+                "operationId": "29196fdc94b1fcfbab1d65a18f7579c6",
                 "parameters": [
                     {
                         "name": "id",
@@ -816,6 +816,71 @@
                     },
                     "500": {
                         "description": "Server error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/places/{place_id}/booked-schedule": {
+            "get": {
+                "tags": [
+                    "Places"
+                ],
+                "summary": "Get booked schedule for a specific place",
+                "description": "Returns the schedule that is booked for a place based on current reservations with status 'booked'.",
+                "operationId": "getBookedSchedule",
+                "parameters": [
+                    {
+                        "name": "place_id",
+                        "in": "path",
+                        "description": "ID of the place to get the booked schedule",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Booked schedule retrieved successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "start_date": {
+                                                "type": "string",
+                                                "example": "2024-10-25"
+                                            },
+                                            "end_date": {
+                                                "type": "string",
+                                                "example": "2024-10-25"
+                                            },
+                                            "start_time": {
+                                                "type": "string",
+                                                "example": "14:00"
+                                            },
+                                            "end_time": {
+                                                "type": "string",
+                                                "example": "15:00"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No booked schedule found or place not found."
+                    },
+                    "500": {
+                        "description": "Internal server error."
                     }
                 },
                 "security": [
@@ -885,7 +950,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "tags": [
@@ -897,8 +967,17 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
+                                "required": [
+                                    "name",
+                                    "description",
+                                    "capacity",
+                                    "available_from",
+                                    "available_to",
+                                    "type",
+                                    "default_hours"
+                                ],
                                 "properties": {
                                     "name": {
                                         "type": "string",
@@ -908,10 +987,11 @@
                                         "type": "string",
                                         "example": "A large conference hall."
                                     },
-                                    "images": {
+                                    "images[]": {
                                         "type": "array",
                                         "items": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "format": "binary"
                                         }
                                     },
                                     "capacity": {
@@ -932,10 +1012,12 @@
                                         "type": "string",
                                         "example": "auditorio"
                                     },
-                                    "default_days": {
+                                    "default_days[]": {
+                                        "description": "Array of default days",
                                         "type": "array",
                                         "items": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Lun"
                                         }
                                     },
                                     "default_hours": {
@@ -997,7 +1079,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/places/{id}": {
@@ -1097,7 +1184,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
@@ -1120,8 +1212,12 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
+                                "required": [
+                                    "name",
+                                    "description"
+                                ],
                                 "properties": {
                                     "name": {
                                         "type": "string",
@@ -1134,7 +1230,8 @@
                                     "images": {
                                         "type": "array",
                                         "items": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "format": "binary"
                                         }
                                     },
                                     "capacity": {
@@ -1220,7 +1317,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -1286,7 +1388,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/filter-places": {
